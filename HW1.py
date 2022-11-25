@@ -8,11 +8,12 @@ from shapely.geometry.polygon import Polygon, LineString, orient
 import copy
 import math
 
-#added for compare
-#from quantimpy import minkowski as mk
-
-def angle_vector():
-    return
+def euclidian_distance(a, b):
+    #Given two tuples, a and b, return their euclidian distance
+    sum1 = a[0]-b[0]
+    sum2 = a[1]-b[1]
+    dist = np.sqrt(sum1**2 + sum2**2)
+    return dist
 
 # TODO
 def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
@@ -102,7 +103,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
             edge = LineString([point_list[i], point_list[j]])
             flag = False
             for polygon in obstacles:
-                if edge.crosses(polygon) or edge.covered_by(polygon):
+                if edge.crosses(polygon) or edge.within(polygon):
                     flag = True
                     break
             if not flag:
@@ -124,10 +125,67 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
 #     atan = math.atan2(x[1], x[0])
 #     return (atan, x[1]**2+x[0]**2) if atan >= 0 else (2*math.pi + atan, x[0]**2+x[1]**2)
 
+# def retrieve_smallest(dict1, dict2):
+    # finds the key shared by both dictionaries, which has the smallest value in dict2
+
 #TODO shortest path algorithm
-def dijkstra(lines):
-    # First process edges into
-    pass
+def dijkstra(lines, source):
+    # First process edges into adjacency list
+    vertices={}
+    for line in lines:
+        a=line.coords[0]
+        b=line.coords[1]
+        vertices[a]=[]
+        vertices[b] = []
+    dist = vertices.copy()
+    previous = vertices.copy()
+    for line in lines:
+        a=line.coords[0]
+        b=line.coords[1]
+        vertices[a].append([b, euclidian_distance(a, b)])#=vertices[a].append(b)
+        vertices[b].append([a, euclidian_distance(a, b)])
+        # vertices[a].append(b)
+        # vertices[b].append(a)
+
+    for vertex in vertices:
+        dist[vertex] = np.inf
+        previous[vertex] = None
+    
+    dist[source] = 0
+    Q = dist.copy()
+
+    while Q:
+        min_dist = np.inf
+        u = None
+        for key in set(Q).intersection(set(dist)):
+            if dist[key] < min_dist:
+                min_dist = dist[key]
+                u = key
+        Q.pop(u)
+        # u_vals = Q.pop(min(dist, key=dist.get in Q))
+        # u = list(vertices.keys())[list(vertices.values()).index(u_vals)]
+        print(u)
+        for neighbour in vertices[u]:
+            dist_u_to_neighbour = neighbour[1]
+            neighbour_vertex = neighbour[0]
+            alt = dist[u] + dist_u_to_neighbour
+            if alt < dist[neighbour_vertex]:
+                dist[neighbour_vertex] = alt
+                previous[neighbour_vertex] = u
+    return previous, dist
+
+def shortest_path_and_cost(lines, source, dest):
+    previous_dictionary, cost_dictionary = dijkstra(lines, source)
+    cost = cost_dictionary[dest]
+    path = []
+    current_vertex = dest
+    path.append(current_vertex)
+    while previous_dictionary[current_vertex]:
+        current_vertex = previous_dictionary[current_vertex]
+        path.append(current_vertex)
+    path.reverse()
+    return path, cost
+
 
 
 def is_valid_file(parser, arg):
@@ -140,6 +198,7 @@ def get_points_and_dist(line):
     dist = float(dist)
     source = tuple(map(float, source.split(',')))
     return source, dist
+
 
 
 if __name__ == '__main__':
@@ -165,36 +224,21 @@ if __name__ == '__main__':
     with open(robot, 'r') as f:
         source, dist = get_points_and_dist(f.readline())
 
-    #Alex Test:
-    with open(query, 'r') as f:
-        dest = tuple(map(float, f.readline().split(',')))
-    lines = get_visibility_graph(workspace_obstacles, source, dest)
-    plotter = Plotter()
-    plotter.add_obstacles(workspace_obstacles)
-    plotter.add_robot(source, dist)
-    plotter.add_visibility_graph(lines)
-    plotter.show_graph()
-
-
     # step 1:
     c_space_obstacles = [get_minkowsky_sum(p, dist) for p in workspace_obstacles]
     plotter1 = Plotter()
 
     plotter1.add_obstacles(workspace_obstacles)
     plotter1.add_c_space_obstacles(c_space_obstacles)
-    plotter1.add_visibility_graph(lines)
-    print(f"workspace obstacles = {workspace_obstacles}")
-    print(f"cspace obstacles = {c_space_obstacles}")
-
-    print(f"workspace obstacle points = {workspace_obstacles[0].exterior.coords.xy}")
-    print(f"cspace obstacle points = {c_space_obstacles[0].exterior.coords.xy}")
     plotter1.add_robot(source, dist)
+
     plotter1.show_graph()
 
     # step 2:
 
     lines = get_visibility_graph(c_space_obstacles)
     plotter2 = Plotter()
+
     plotter2.add_obstacles(workspace_obstacles)
     plotter2.add_c_space_obstacles(c_space_obstacles)
     plotter2.add_visibility_graph(lines)
@@ -208,7 +252,7 @@ if __name__ == '__main__':
 
     lines = get_visibility_graph(c_space_obstacles, source, dest)
     #TODO: fill in the next line
-    shortest_path, cost = None, None
+    shortest_path, cost = shortest_path_and_cost(lines, source, dest)
 
     plotter3 = Plotter()
     plotter3.add_robot(source, dist)
