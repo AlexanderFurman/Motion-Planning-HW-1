@@ -114,24 +114,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
                 lines.append(edge)
 
     return lines
-
-
-# def sort_points_by_angle(point, point_list):
-#     # this would be used for a faster vis_graph algorithm
-#     current_list = point_list.copy()
-#     current_list.remove(point)
-#     current_list.sort(key=angle_key)
-#     return current_list
-
-
-# def angle_key(x):
-#     # this would be used for a faster vis_graph algorithm
-#     atan = math.atan2(x[1], x[0])
-#     return (atan, x[1]**2+x[0]**2) if atan >= 0 else (2*math.pi + atan, x[0]**2+x[1]**2)
-
-# def retrieve_smallest(dict1, dict2):
-# finds the key shared by both dictionaries, which has the smallest value in dict2
-
+    
 # TODO shortest path algorithm
 def dijkstra(lines, source):
     # First process edges into adjacency list
@@ -168,7 +151,7 @@ def dijkstra(lines, source):
         Q.pop(u)
         # u_vals = Q.pop(min(dist, key=dist.get in Q))
         # u = list(vertices.keys())[list(vertices.values()).index(u_vals)]
-        print(u)
+        # print(u)
         for neighbour in vertices[u]:
             dist_u_to_neighbour = neighbour[1]
             neighbour_vertex = neighbour[0]
