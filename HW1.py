@@ -8,12 +8,14 @@ from shapely.geometry.polygon import Polygon, LineString, orient
 import copy
 import math
 
+
 def euclidian_distance(a, b):
-    #Given two tuples, a and b, return their euclidian distance
-    sum1 = a[0]-b[0]
-    sum2 = a[1]-b[1]
-    dist = np.sqrt(sum1**2 + sum2**2)
+    # Given two tuples, a and b, return their euclidian distance
+    sum1 = a[0] - b[0]
+    sum2 = a[1] - b[1]
+    dist = np.sqrt(sum1 ** 2 + sum2 ** 2)
     return dist
+
 
 # TODO
 def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
@@ -24,40 +26,42 @@ def get_minkowsky_sum(original_shape: Polygon, r: float) -> Polygon:
     :return: The polygon composed from the Minkowsky sums
     """
 
-    #calculate Q object:
-    Q=Polygon([(0 ,-r),(r, 0),(0 ,r),(-r, 0)]) #(-r, 0)]
-    m=4
-    n=original_shape.boundary.bounds.__len__()
-    i=0
-    j=0
-    v=original_shape
-    v=orient(v, sign=1.0)
-    #shapely.geometry.polygon.orient(polygon, sign=1.0)
+    # calculate Q object(rhombus):
+    Q = Polygon([(0, -r), (r, 0), (0, r), (-r, 0)])  # (-r, 0)]
+    # number of vertices each polygon:
+    m = Q.boundary.coords.xy[0].__len__()-1
+    n = original_shape.boundary.coords.xy[0].__len__()-1
+    i = 0
+    j = 0
+    v = original_shape
+    # make the polygons ccw:
+    v = orient(v, sign=1.0)
+    Q = orient(Q, sign=1.0)
 
-    PQ=[]
-    cond=0
-    while cond==0:
-        if(i>=n and j>=m):
+    PQ = []
+    cond = 0
+    while cond == 0:
+        if (i >= n and j >= m):
             break
-        PQ.append((v.boundary.coords.xy[0][i%n]+Q.boundary.coords.xy[0][j%m],v.boundary.coords.xy[1][i%n]+Q.boundary.coords.xy[1][j%m]))
-        v_dx=(v.boundary.coords.xy[0][(i+1)%n]-v.boundary.coords.xy[0][i%n])
-        v_dy=v.boundary.coords.xy[1][(i+1)%n]-v.boundary.coords.xy[1][i%n]
-        #angle_v=(v_dy)/(v_dx)
-        w_dx=(Q.boundary.coords.xy[0][(j+1)%m]-Q.boundary.coords.xy[0][j%m])
-        w_dy=Q.boundary.coords.xy[1][(j+1)%m]-Q.boundary.coords.xy[1][j%m]
-        #angle_w = (w_dy)/(w_dx)
-        cross=v_dx*w_dy-v_dy*w_dx
-        if cross>=0:#angle_v<angle_w:
-            i+=1
-        if cross<=0:#angle_v>angle_w:
-            j+=1
+        PQ.append((v.boundary.coords.xy[0][i % n] + Q.boundary.coords.xy[0][j % m],
+                   v.boundary.coords.xy[1][i % n] + Q.boundary.coords.xy[1][j % m]))
+        v_dx = (v.boundary.coords.xy[0][(i + 1) % n] - v.boundary.coords.xy[0][i % n])
+        v_dy = v.boundary.coords.xy[1][(i + 1) % n] - v.boundary.coords.xy[1][i % n]
+        w_dx = (Q.boundary.coords.xy[0][(j + 1) % m] - Q.boundary.coords.xy[0][j % m])
+        w_dy = Q.boundary.coords.xy[1][(j + 1) % m] - Q.boundary.coords.xy[1][j % m]
+        cross = v_dx * w_dy - v_dy * w_dx
+        if cross >= 0:  # angle_v<=angle_w:
+            i += 1
+        if cross <= 0:  # angle_v>=angle_w:
+            j += 1
 
-    print('minkowsky')
-    v_new=Polygon(PQ)
-    print(v_new.bounds)
+    v_new = Polygon(PQ)
+    if 0:
+        print('minkowsky')
+        print(v_new.bounds)
     return v_new
 
-    #pass
+    # pass
 
 
 # TODO
@@ -70,7 +74,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     :return: A list of LineStrings holding the edges of the visibility graph
     """
 
-    #first preprocess all of the points:
+    # first preprocess all of the points:
 
     lines = []
     point_list = []
@@ -79,7 +83,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     #     neighbours[hash(point)] = [0]
     # print(neighbours.get_keys())
 
-    #add all point tuples from the polygons into an unordered list
+    # add all point tuples from the polygons into an unordered list
     for polygon in obstacles:
         num_vertices = len(polygon.exterior.coords.xy[1][1:])
 
@@ -94,7 +98,7 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
     # For each point in point_list, create a LineString using every other point in point_list
     # and check if the LineString intersects with any of the polygons
     # If there is no intersection, we add the LineString to the lines array
-    #NOTE: This is a naive approach, and takes O(n^3) (?) - Try find something better!!!
+    # NOTE: This is a naive approach, and takes O(n^3) (?) - Try find something better!!!
 
     for i in range(len(point_list)):
         for j in range(len(point_list)):
@@ -126,23 +130,23 @@ def get_visibility_graph(obstacles: List[Polygon], source=None, dest=None) -> Li
 #     return (atan, x[1]**2+x[0]**2) if atan >= 0 else (2*math.pi + atan, x[0]**2+x[1]**2)
 
 # def retrieve_smallest(dict1, dict2):
-    # finds the key shared by both dictionaries, which has the smallest value in dict2
+# finds the key shared by both dictionaries, which has the smallest value in dict2
 
-#TODO shortest path algorithm
+# TODO shortest path algorithm
 def dijkstra(lines, source):
     # First process edges into adjacency list
-    vertices={}
+    vertices = {}
     for line in lines:
-        a=line.coords[0]
-        b=line.coords[1]
-        vertices[a]=[]
+        a = line.coords[0]
+        b = line.coords[1]
+        vertices[a] = []
         vertices[b] = []
     dist = vertices.copy()
     previous = vertices.copy()
     for line in lines:
-        a=line.coords[0]
-        b=line.coords[1]
-        vertices[a].append([b, euclidian_distance(a, b)])#=vertices[a].append(b)
+        a = line.coords[0]
+        b = line.coords[1]
+        vertices[a].append([b, euclidian_distance(a, b)])  # =vertices[a].append(b)
         vertices[b].append([a, euclidian_distance(a, b)])
         # vertices[a].append(b)
         # vertices[b].append(a)
@@ -150,7 +154,7 @@ def dijkstra(lines, source):
     for vertex in vertices:
         dist[vertex] = np.inf
         previous[vertex] = None
-    
+
     dist[source] = 0
     Q = dist.copy()
 
@@ -174,6 +178,7 @@ def dijkstra(lines, source):
                 previous[neighbour_vertex] = u
     return previous, dist
 
+
 def shortest_path_and_cost(lines, source, dest):
     previous_dictionary, cost_dictionary = dijkstra(lines, source)
     cost = cost_dictionary[dest]
@@ -185,7 +190,6 @@ def shortest_path_and_cost(lines, source, dest):
         path.append(current_vertex)
     path.reverse()
     return path, cost
-
 
 
 def is_valid_file(parser, arg):
@@ -200,10 +204,10 @@ def get_points_and_dist(line):
     return source, dist
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("Robot", help="A file that holds the starting position of the robot, and the distance from the center of the robot to any of its vertices")
+    parser.add_argument("Robot",
+                        help="A file that holds the starting position of the robot, and the distance from the center of the robot to any of its vertices")
     parser.add_argument("Obstacles", help="A file that contains the obstacles in the map")
     parser.add_argument("Query", help="A file that contains the ending position for the robot.")
     args = parser.parse_args()
@@ -251,7 +255,7 @@ if __name__ == '__main__':
         dest = tuple(map(float, f.readline().split(',')))
 
     lines = get_visibility_graph(c_space_obstacles, source, dest)
-    #TODO: fill in the next line
+    # TODO: fill in the next line
     shortest_path, cost = shortest_path_and_cost(lines, source, dest)
 
     plotter3 = Plotter()
@@ -260,6 +264,5 @@ if __name__ == '__main__':
     plotter3.add_robot(dest, dist)
     plotter3.add_visibility_graph(lines)
     plotter3.add_shorterst_path(list(shortest_path))
-
 
     plotter3.show_graph()
